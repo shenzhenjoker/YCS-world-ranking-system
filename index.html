@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>世界大师杯排名系统</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100%;
+      overflow-x: hidden;
+      background: #000;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('./assets/background.png') center center / cover no-repeat;
+      filter: brightness(0.3) blur(3px);
+      z-index: -2;
+    }
+
+    canvas#bgCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+    }
+
+    header {
+      background-color: rgba(0,0,0,0.7);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header img.logo {
+      height: 60px;
+    }
+
+    .title-box {
+      flex-grow: 1;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      transition: all 0.3s ease-in-out;
+      color: #fff;
+    }
+
+    .lang-box {
+      font-size: 14px;
+    }
+
+    table {
+      width: 90%;
+      margin: 40px auto 10px;
+      border-collapse: collapse;
+      background-color: rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.6s ease-in;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 16px;
+      color: #fff;
+    }
+
+    th {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    tr {
+      transition: all 0.3s ease;
+    }
+
+    tr:hover {
+      background-color: rgba(255,255,255,0.08);
+    }
+
+    .rank-icon {
+      font-size: 22px;
+      animation: popIn 0.4s ease-in-out;
+    }
+
+    .highlight {
+      animation: flash 1s ease-in-out;
+    }
+
+    tr.gold {
+      background-color: rgba(255, 215, 0, 0.2);
+      border-left: 4px solid gold;
+    }
+
+    tr.silver {
+      background-color: rgba(192, 192, 192, 0.2);
+      border-left: 4px solid silver;
+    }
+
+    tr.bronze {
+      background-color: rgba(205, 127, 50, 0.2);
+      border-left: 4px solid peru;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes flash {
+      0% { background-color: rgba(255, 215, 0, 0.3); }
+      100% { background-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <header>
+    <img src="./assets/logo.png" class="logo" alt="Logo"/>
+    <div class="title-box" id="page-title">加载中...</div>
+    <div class="lang-box">
+      <button onclick="switchLang('en')">EN</button> | <button onclick="switchLang('zh')">中</button>
+    </div>
+  </header>
+
+  <table id="rankingTable">
+    <thead>
+      <tr>
+        <th id="th-rank">名次</th>
+        <th id="th-country">国家</th>
+        <th id="th-name">选手</th>
+        <th id="th-result">成绩</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let currentLang = "zh";
+    let lastData = [];
+
+    const langPack = {
+      zh: {
+        th_rank: "名次", th_country: "国家", th_name: "选手", th_result: "成绩"
+      },
+      en: {
+        th_rank: "Rank", th_country: "Country", th_name: "Athlete", th_result: "Result"
+      }
+    };
+
+    function switchLang(lang) {
+      currentLang = lang;
+      document.getElementById("th-rank").innerText = langPack[lang].th_rank;
+      document.getElementById("th-country").innerText = langPack[lang].th_country;
+      document.getElementById("th-name").innerText = langPack[lang].th_name;
+      document.getElementById("th-result").innerText = langPack[lang].th_result;
+
+      fetch("title.json").then(r => r.json()).then(t => {
+        document.getElementById("page-title").innerText = t[lang];
+      });
+    }
+
+    function loadData() {
+      fetch("result.json")
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector("#rankingTable tbody");
+          tbody.innerHTML = '';
+          data.forEach((row, i) => {
+            const tr = document.createElement("tr");
+            if (i === 0) tr.classList.add("gold");
+            else if (i === 1) tr.classList.add("silver");
+            else if (i === 2) tr.classList.add("bronze");
+
+            if (!lastData[i] || lastData[i].name !== row.name) {
+              tr.classList.add("highlight");
+            }
+            lastData[i] = row;
+
+            let icon = '';
+            if (i === 0) icon = '🥇';
+            else if (i === 1) icon = '🥈';
+            else if (i === 2) icon = '🥉';
+            else icon = i + 1;
+
+            tr.innerHTML = `
+              <td class="rank-icon">${icon}</td>
+              <td>${row.nationality}</td>
+              <td>${row.name}</td>
+              <td>${row.result}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    // 粒子动效初始化
+    const canvas = document.getElementById("bgCanvas");
+    const ctx = canvas.getContext("2d");
+    let w, h, particles;
+
+    function initCanvas() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      particles = Array.from({length: 80}, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 2 + 1,
+        dx: (Math.random() - 0.5) * 0.8,
+        dy: (Math.random() - 0.5) * 0.8
+      }));
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff55";
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+        ctx.fill();
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0 || p.x > w) p.dx *= -1;
+        if (p.y < 0 || p.y > h) p.dy *= -1;
+      });
+      requestAnimationFrame(drawParticles);
+    }
+
+    window.addEventListener("resize", initCanvas);
+
+    switchLang("zh");
+    loadData();
+    setInterval(loadData, 10000);
+    initCanvas();
+    drawParticles();
+  </script>
+</body>
+</html>
