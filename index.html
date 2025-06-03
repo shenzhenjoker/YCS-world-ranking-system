@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>世界大师杯排名系统</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <script src="./assets/flag-map.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      font-family: Orbitron, sans-serif;
+      overflow-x: hidden;
+    }
+    #tsparticles {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('./assets/background.png') center center / cover no-repeat;
+      filter: brightness(0.2) blur(3px);
+      z-index: -2;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(0, 0, 0, 0.6);
+      border-bottom: 2px solid #00eaff55;
+      box-shadow: 0 0 14px #00eaffaa;
+    }
+    .logo {
+      height: 100px;
+      filter: drop-shadow(0 0 6px #00eaff);
+    }
+    .title-block {
+      flex: 1;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 0 10px #00eaff, 0 0 20px #00eaffaa;
+      animation: glow 2s infinite alternate;
+      line-height: 1.4;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 5px #00eaff; }
+      to   { text-shadow: 0 0 20px #00eaff, 0 0 40px #00eaffaa; }
+    }
+    .container {
+      max-width: 1280px;
+      margin: 2rem auto;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 18px;
+      box-shadow: 0 0 16px #00eaff55;
+      padding: 1rem;
+      backdrop-filter: blur(6px);
+      animation: fadein 1s ease-in-out;
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .rank-header {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 1rem 0;
+      color: #00eaff;
+      text-shadow: 0 0 8px #00eaffaa;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+      color: white;
+    }
+    th, td {
+      padding: 0.6rem;
+      text-align: center;
+    }
+    tr.gold { background: rgba(255, 215, 0, 0.15); animation: pulse 2s infinite; }
+    tr.silver { background: rgba(192, 192, 192, 0.1); }
+    tr.bronze { background: rgba(205, 127, 50, 0.1); }
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 8px #ffd700aa; }
+      50% { transform: scale(1.02); box-shadow: 0 0 16px #ffd700; }
+      100% { transform: scale(1); box-shadow: 0 0 8px #ffd700aa; }
+    }
+    .national-group {
+      border: 1px solid #00eaff55;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      background: rgba(255, 255, 255, 0.02);
+      box-shadow: 0 0 12px #00eaff22;
+      animation: fadein 0.6s ease-in;
+    }
+    .group-title {
+      font-size: 1.2rem;
+      color: #00eaff;
+      margin-bottom: 0.6rem;
+    }
+    .flag {
+      height: 16px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    .fade {
+      opacity: 0;
+      transition: opacity 0.8s ease-in-out;
+    }
+    .fade.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="tsparticles"></div>
+  <header>
+    <img src="./assets/logo.png" class="logo" />
+    <div class="title-block" id="page-title">
+      <div>加载中...</div>
+      <div style="font-size:0.8em;margin-top:4px;">Loading...</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="rankHeader" class="rank-header"></div>
+    <div id="rankingTable" class="fade show"></div>
+  </div>
+
+  <script>
+(async function () {
+  // 加载标题
+  const title = await fetch("./title.json").then(res => res.json()).catch(() => ({ zh: "CPU大师竞技赛", en: "CPU Master Competition" }));
+  document.getElementById("page-title").innerHTML = `<div>${title.zh}</div><div style="font-size:0.8em;margin-top:4px;">${title.en}</div>`;
+
+  // 初始化粒子背景
+  tsParticles.load("tsparticles", {
+    particles: { number: { value: 80 }, size: { value: 3 }, move: { enable: true }, line_linked: { enable: true } },
+    background: { color: "#000" }
+  });
+
+  // 加载数据
+  const raw = await fetch("./result.json").then(res => res.json());
+  const allRows = raw.map((r, i) => ({
+    name: r.name,
+    result: r.result,
+    nationality: r.nationality,
+    time: r.result.split(':').reduce((acc, v, i) => acc + parseFloat(v) * [3600, 60, 1][i], 0)
+  })).sort((a, b) => a.time - b.time);
+
+  // 国家分组
+  const grouped = {};
+  for (const row of allRows) {
+    const country = row.nationality.trim();
+    if (!grouped[country]) grouped[country] = [];
+    grouped[country].push(row);
+  }
+
+  const countries = Object.keys(grouped).sort();
+  const nationPages = [];
+  for (let i = 0; i < countries.length; i += 3) {
+    nationPages.push(countries.slice(i, i + 3));
+  }
+
+  const rankHeader = document.getElementById("rankHeader");
+  const rankingTable = document.getElementById("rankingTable");
+
+  let currentIndex = 0;
+  let isNation = false;
+
+  function getFlagUrl(name) {
+    const code = window.flagMap?.[name.trim()]?.toLowerCase();
+    return code ? `https://flagcdn.com/w40/${code}.png` : "";
+  }
+
+  function medalIcon(i) {
+    return i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
+  }
+
+  function renderTable() {
+    rankingTable.classList.remove("show");
+    setTimeout(() => {
+      if (!isNation) {
+        rankHeader.innerText = "CPU大师竞技赛 / CPU Master Competition";
+        const rows = allRows.map((r, i) => {
+          const medal = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+          const flag = getFlagUrl(r.nationality);
+          return `<tr class="${medal}">
+            <td>${medalIcon(i)}</td>
+            <td><img class="flag" src="${flag}"/>${r.nationality}</td>
+            <td>${r.name}</td>
+            <td>${r.result}</td>
+          </tr>`;
+        }).join("");
+        rankingTable.innerHTML = `<table><thead><tr><th>名次</th><th>国家</th><th>选手</th><th>成绩</th></tr></thead><tbody>${rows}</tbody></table>`;
+      } else {
+        rankHeader.innerText = "晋级名单 / Qualifiers List";
+        const nations = nationPages[currentIndex];
+        rankingTable.innerHTML = nations.map(nation => {
+          const flag = getFlagUrl(nation);
+          const top3 = grouped[nation].slice(0, 3);
+          const rows = top3.map((r, i) =>
+            `<tr><td>${medalIcon(i)}</td><td>${r.name}</td><td>${r.result}</td></tr>`
+          ).join("");
+          return `<div class="national-group">
+            <div class="group-title"><img class="flag" src="${flag}"/>${nation}</div>
+            <table><thead><tr><th>名次</th><th>选手</th><th>成绩</th></tr></thead><tbody>${rows}</tbody></table>
+          </div>`;
+        }).join("");
+      }
+      setTimeout(() => rankingTable.classList.add("show"), 50);
+    }, 300);
+  }
+
+  renderTable();
+  setInterval(() => {
+    if (isNation) {
+      currentIndex++;
+      if (currentIndex >= nationPages.length) {
+        isNation = false;
+        currentIndex = 0;
+      }
+    } else {
+      isNation = true;
+    }
+    renderTable();
+  }, 5000);
+})();
+</script>
+</body>
+</html>
