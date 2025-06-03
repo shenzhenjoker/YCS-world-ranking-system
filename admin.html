@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>管理后台 - 世界大师杯</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #111; color: #eee; }
+    h1 { color: #0f0; }
+    input, button, select { padding: 0.5rem; margin: 0.5rem; }
+    .block { margin-bottom: 2rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; background: #222; }
+    th, td { border: 1px solid #444; padding: 0.5rem; text-align: center; }
+    th { background-color: #333; }
+  </style>
+</head>
+<body>
+  <h1>🏆 世界大师杯比赛管理后台</h1>
+
+  <div class="block">
+    <h2>上传 Excel 并生成 result.json</h2>
+    <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    <button onclick="handleExcel()">解析并导出</button>
+    <p style="color: #aaa;">请将生成的 result.json 上传至 GitHub 仓库根目录</p>
+  </div>
+
+  <table id="previewTable">
+    <thead>
+      <tr><th>名次</th><th>国家</th><th>姓名</th><th>成绩</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    function handleExcel() {
+      const file = document.getElementById('excelFile').files[0];
+      if (!file) return alert('请先选择 Excel 文件');
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        // 预览表格 + 构造 result.json 结构
+        const result = [];
+        const tbody = document.querySelector('#previewTable tbody');
+        tbody.innerHTML = '';
+
+        json.forEach((row, i) => {
+          const rank = i + 1;
+          const nationality = row["国籍/Nationality"] || row["国家"] || '';
+          const name = row["选手名/Athlete's Name"] || row["姓名"] || '';
+          const resultStr = row["成绩/Result"] || row["成绩"] || '';
+          result.push({ rank, nationality, name, result: resultStr });
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${rank}</td><td>${nationality}</td><td>${name}</td><td>${resultStr}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'result.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
