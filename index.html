@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>世界大师杯排名</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <script src="./assets/flag-map.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      font-family: Orbitron, sans-serif;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('./assets/background.png') center center / cover no-repeat;
+      filter: brightness(0.25) blur(3px);
+      z-index: -1;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 2rem;
+      background: rgba(0,0,0,0.7);
+      border-bottom: 2px solid #00eaff55;
+      box-shadow: 0 0 12px #00eaffaa;
+    }
+    .logo {
+      height: 48px;
+      filter: drop-shadow(0 0 4px #00eaff);
+    }
+    .title {
+      flex: 1;
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 0 8px #00eaff;
+    }
+    .lang-switch button {
+      background: none;
+      color: #00eaff;
+      border: 1px solid #00eaff55;
+      padding: 4px 8px;
+      margin-left: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .table-container {
+      max-width: 960px;
+      margin: 2rem auto;
+      background: rgba(0,0,0,0.5);
+      border-radius: 16px;
+      box-shadow: 0 0 14px #00eaff55;
+      backdrop-filter: blur(5px);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: white;
+    }
+    th {
+      background: rgba(0,255,255,0.1);
+      padding: 1rem;
+      font-size: 1rem;
+    }
+    td {
+      padding: 1rem;
+      text-align: center;
+      font-size: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    tr.gold { background: linear-gradient(90deg,#FFD70033,#FFD70011); }
+    tr.silver { background: linear-gradient(90deg,#C0C0C033,#C0C0C011); }
+    tr.bronze { background: linear-gradient(90deg,#CD7F3233,#CD7F3211); }
+    tr:hover { background: rgba(255,255,255,0.06); }
+    .flag { height: 16px; margin-right: 5px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="./assets/logo.png" class="logo" />
+    <div class="title" id="page-title">加载中...</div>
+    <div class="lang-switch">
+      <button onclick="setLang('zh')">中</button>
+      <button onclick="setLang('en')">EN</button>
+    </div>
+  </header>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th id="th-rank">名次</th>
+          <th id="th-country">国家</th>
+          <th id="th-name">选手</th>
+          <th id="th-result">成绩</th>
+        </tr>
+      </thead>
+      <tbody id="rankingTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    let currentLang = "zh";
+    async function setLang(lang) {
+      currentLang = lang;
+      const title = await fetch("title.json").then(r => r.json());
+      document.getElementById("page-title").innerText = title[lang] || "世界大师杯";
+
+      document.getElementById("th-rank").innerText = lang === "zh" ? "名次" : "Rank";
+      document.getElementById("th-country").innerText = lang === "zh" ? "国家" : "Country";
+      document.getElementById("th-name").innerText = lang === "zh" ? "选手" : "Athlete";
+      document.getElementById("th-result").innerText = lang === "zh" ? "成绩" : "Result";
+    }
+
+    function getFlagUrl(name) {
+      const code = countryMap[name.trim()];
+      return code ? "https://flagcdn.com/h20/" + code + ".png" : "";
+    }
+
+    function loadTable() {
+      fetch("result.json").then(r => r.json()).then(data => {
+        const tbody = document.getElementById("rankingTable");
+        tbody.innerHTML = "";
+        data.forEach((row, i) => {
+          const tr = document.createElement("tr");
+          if (i === 0) tr.classList.add("gold");
+          else if (i === 1) tr.classList.add("silver");
+          else if (i === 2) tr.classList.add("bronze");
+          const flag = getFlagUrl(row.nationality);
+          const flagImg = flag ? "<img class='flag' src='" + flag + "' />" : "";
+          tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + flagImg + row.nationality + "</td><td>" + row.name + "</td><td>" + row.result + "</td>";
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    setLang("zh");
+    loadTable();
+    setInterval(loadTable, 10000);
+  </script>
+</body>
+</html>
