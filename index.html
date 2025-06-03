@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>World Ranking System</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('./assets/background.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      text-align: center;
+    }
+    header {
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+    img.logo {
+      height: 80px;
+    }
+    .lang-switch {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 14px;
+    }
+    .container {
+      margin-top: 30px;
+    }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: rgba(0,0,0,0.6);
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    th {
+      background: #222;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="./assets/logo.png" alt="logo" class="logo" />
+    <div class="lang-switch">
+      <button onclick="switchLang('en')">English</button> | 
+      <button onclick="switchLang('zh')">中文</button>
+    </div>
+  </header>
+  <div class="container">
+    <h1 id="title">World Championship Ranking</h1>
+    <p id="subtitle">Updated every 10 seconds</p>
+
+    <table id="rankingTable">
+      <thead>
+        <tr><th id="th-rank">Rank</th><th id="th-country">Nationality</th><th id="th-name">Name</th><th id="th-result">Result</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const langPack = {
+      en: {
+        title: "World Championship Ranking",
+        subtitle: "Updated every 10 seconds",
+        rank: "Rank", country: "Nationality", name: "Name", result: "Result"
+      },
+      zh: {
+        title: "世界大师杯排名",
+        subtitle: "每10秒自动更新一次",
+        rank: "名次", country: "国家", name: "姓名", result: "成绩"
+      }
+    };
+
+    let currentLang = 'zh';
+
+    function switchLang(lang) {
+      currentLang = lang;
+      const t = langPack[lang];
+      document.getElementById('title').innerText = t.title;
+      document.getElementById('subtitle').innerText = t.subtitle;
+      document.getElementById('th-rank').innerText = t.rank;
+      document.getElementById('th-country').innerText = t.country;
+      document.getElementById('th-name').innerText = t.name;
+      document.getElementById('th-result').innerText = t.result;
+    }
+
+    function loadData() {
+      fetch('./result.json')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector('#rankingTable tbody');
+          tbody.innerHTML = '';
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.rank}</td><td>${row.nationality}</td><td>${row.name}</td><td>${row.result}</td>`;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    loadData();
+    setInterval(loadData, 10000);  // 每10秒刷新
+  </script>
+</body>
+</html>
