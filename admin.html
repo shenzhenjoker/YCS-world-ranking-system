@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>管理端上传 V2.2</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f5f5f5; }
+    .upload-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 0 10px #ccc; max-width: 600px; margin: auto; }
+    input[type=file] { margin-top: 1rem; }
+    pre { background: #222; color: #0f0; padding: 1rem; border-radius: 4px; max-height: 300px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div class="upload-box">
+    <h2>上传 Excel 成绩表</h2>
+    <input type="file" id="upload" accept=".xlsx,.xls,.csv" />
+    <pre id="output">等待上传...</pre>
+  </div>
+
+  <script>
+    function normalize(key) {
+      return key.toLowerCase().replace(/\s+/g, "").trim();
+    }
+
+    function matchField(row, patterns) {
+      const keys = Object.keys(row);
+      for (const key of keys) {
+        const normKey = normalize(key);
+        if (patterns.some(p => normKey.includes(p))) {
+          return row[key];
+        }
+      }
+      return "";
+    }
+
+    document.getElementById('upload').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        const result = jsonData.map(row => ({
+          nationality: matchField(row, ["国籍", "国家", "nationality", "country"]),
+          name: matchField(row, ["姓名", "名字", "name", "athlete"]),
+          result: matchField(row, ["成绩", "result", "time"])
+        }));
+
+        const output = JSON.stringify(result, null, 2);
+        document.getElementById('output').textContent = output;
+
+        const blob = new Blob([output], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "result.json";
+        link.click();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
