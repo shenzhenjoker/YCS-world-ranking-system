@@ -278,6 +278,63 @@ body::before {
   z-index: -2;
 }
 
+
+/* 卡片动效变为自动呼吸式，不再 hover 触发 */
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 10px #00eaff22; transform: scale(1.00); }
+  50% { box-shadow: 0 0 22px #00eaff88; transform: scale(1.015); }
+  100% { box-shadow: 0 0 10px #00eaff22; transform: scale(1.00); }
+}
+
+.national-group {
+  width: 22%;
+  min-width: 180px;
+  font-size: 0.95rem;
+  border: 1px solid #00eaff88;
+  border-radius: 14px;
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: 0 0 16px #00eaff22;
+  text-align: center;
+  animation: glowPulse 3.6s ease-in-out infinite;
+}
+
+.group-title {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #00eaff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.group-title img.flag {
+  height: 18px;
+  margin: 0;
+}
+
+.athlete-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 10px;
+  box-shadow: 0 0 6px rgba(0,255,255,0.35);
+}
+.athlete-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.05rem;
+  margin-top: 6px;
+}
+.athlete-result {
+  color: #0ff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
 </style>
 </head>
 <body>
